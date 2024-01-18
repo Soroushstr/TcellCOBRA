@@ -17,3 +17,12 @@ modelDirectory = getDistributedModelFolder(modelFileName); %Look up the folder f
 modelFileName= [modelDirectory filesep modelFileName]; % Get the full path. Necessary to be sure, that the right model is loaded
 model = readCbModel(modelFileName);
 ```
+
+## Reading Macrophage model
+```MATLAB
+% Reading marophage model
+modelMacroFileName = 'C:\Users\Soroush\cobratoolbox\msb201068-s1.xml'
+model_macrophage = readSBML(modelMacroFileName,1000)
+model = addReaction(model,'biomass_mac','reactionFormula',char(printRxnFormula(model_macrophage,'biomass_mac')))
+modelnew = changeObjective(model,'biomass_mac',1.0)
+```
