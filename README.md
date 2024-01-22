@@ -26,3 +26,10 @@ model_macrophage = readSBML(modelMacroFileName,1000)
 model = addReaction(model,'biomass_mac','reactionFormula',char(printRxnFormula(model_macrophage,'biomass_mac')))
 modelnew = changeObjective(model,'biomass_mac',1.0)
 ```
+
+## Reading Recon 2 Model
+```MATLAB
+% reading Recon 2.2 model
+modelRecon2FileName = 'C:\Users\Soroush\cobratoolbox\MODEL1603150001_url.xml'
+modelRecon2 = readSBML(modelRecon2FileName,1000)
+```
