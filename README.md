@@ -34,7 +34,7 @@ modelRecon2FileName = 'C:\Users\Soroush\cobratoolbox\MODEL1603150001_url.xml'
 modelRecon2 = readSBML(modelRecon2FileName,1000)
 ```
 
-## Adding Reactions from Recon 2.2 and Macrophage model
+## Adding reactions from Recon 2.2 and Macrophage model
 ```MATLAB
 % Adding new reactions
 modelnew = addReaction(modelnew,'PRPNCOAHYDm','reactionFormula',char(printRxnFormula(model_macrophage,'PRPNCOAHYDm')))
@@ -50,4 +50,21 @@ modelnew = addReaction(modelnew,'RTOT_3','reactionFormula',char(printRxnFormula(
 modelnew = addReaction(modelnew,'ARTFR13','reactionFormula',char(printRxnFormula(modelRecon2,'ARTFR13')))
 modelnew = addExchangeRxn(modelnew, 'ca2[e]')
 modelnew = addExchangeRxn(modelnew, 'cl[e]')
+```
+
+## Exchange reactions
+```MATLAB
+exRxns = printUptakeBound(modelnewfinal)
+modeltest = changeRxnBounds(modelnewfinal,modelnewfinal.rxns(exRxns),0,'l')
+```
+### Naive exchange reactions
+```MATLAB
+naiveExRxns = {'EX_ca2[e]','EX_cl[e]','EX_co[e]','EX_co2[e]','EX_fe2[e]','EX_h[e]','EX_h2o[e]','EX_k[e]','EX_na1[e]','EX_nh4[e]',...
+               'EX_no2[e]','EX_o2[e]','EX_pi[e]','EX_so4[e]','EX_glc_D[e]','EX_ala_L[e]','EX_arg_L[e]',...
+               'EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_eicostet[e]','EX_gln_L[e]','EX_glu_L[e]','EX_gly[e]',...
+               'EX_hdca[e]','EX_hdcea[e]','EX_his_L[e]','EX_ile_L[e]','EX_leu_L[e]','EX_lnlc[e]','EX_lnlnca[e]',...
+               'EX_lnlncg[e]','EX_lys_L[e]','EX_met_L[e]','EX_ocdca[e]','EX_ocdcea[e]','EX_orn_D[e]',...
+               'EX_phe_L[e]','EX_pro_L[e]','EX_ribflv[e]','EX_ser_L[e]','EX_thr_L[e]','EX_trp_L[e]','EX_tyr_L[e]',...
+               'EX_val_L[e]','EX_vitd3[e]'}
+modelnaive = changeRxnBounds(modeltest,naiveExRxns,-1000,'l')
 ```
