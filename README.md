@@ -59,6 +59,11 @@ modeltest = changeRxnBounds(modelnewfinal,modelnewfinal.rxns(exRxns),0,'l')
 ```
 ### Naive exchange reactions
 ```MATLAB
+% Following exchange reactions are open to uptake (i.e. lb = -1000)
+
+% Following exchange reactions are tightly controlled for uptake (i.e. lb =-1)
+
+% Glucose uptake is controlled at lb = -100
 naiveExRxns = {'EX_ca2[e]','EX_cl[e]','EX_co[e]','EX_co2[e]','EX_fe2[e]','EX_h[e]','EX_h2o[e]','EX_k[e]','EX_na1[e]','EX_nh4[e]',...
                'EX_no2[e]','EX_o2[e]','EX_pi[e]','EX_so4[e]','EX_glc_D[e]','EX_ala_L[e]','EX_arg_L[e]',...
                'EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_eicostet[e]','EX_gln_L[e]','EX_glu_L[e]','EX_gly[e]',...
