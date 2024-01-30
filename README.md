@@ -114,4 +114,6 @@ naiveIrrRxns = {'TTDCPT2','TMNDNCCRNt','TMNDNCCPT2','TMNDNCCPT1','TETTET6CRNt',.
                 'C204CRNt','C204CPT2','C204CPT1','C181CRNt','C181CPT2','C181CPT1','C180CPT2',...
                 'C180CPT1','C161CRNt','C161CRN2t','C161CPT22','C161CPT2','C161CPT12','C161CPT1',...
                 'C160CPT2','C160CPT1','ARACHCPT2','ARACHCPT1','ADRNCRNt','ADRNCPT2','ADRNCPT1'}
+% Creating the irreversible model
+[modelnaive,matchRevNaive,rev2irrev,irrev2rev] = convertToIrreversible(modelnaive,'sRxns',naiveIrrRxns)
 ```
