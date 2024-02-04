@@ -23,8 +23,11 @@ model = readCbModel(modelFileName);
 % Reading marophage model
 modelMacroFileName = 'C:\Users\Soroush\cobratoolbox\msb201068-s1.xml'
 model_macrophage = readSBML(modelMacroFileName,1000)
+
 %% Biomass function from macrophage model incldues some discrepancies in text (dashed, -, and underscores, _)
-model = addReaction(model,'biomass_mac','reactionFormula',char(printRxnFormula(model_macrophage,'biomass_mac')))
+% We add macrophage biomass function from the Puniya et al model to avoid discrepancies
+
+model = addReaction(model,'biomass_mac','reactionFormula',char(printRxnFormula(model_macrophage,'biomass_Mphage')))
 modelnew = changeObjective(model,'biomass_mac',1.0)
 ```
 
