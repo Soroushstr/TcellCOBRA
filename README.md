@@ -184,15 +184,54 @@ NaiveTissueModel = GIMME(modelnaive_part,expCol_naive,0.5)
 
 % Glucose-dependence test
 for i=0:15
-    model = NaiveTissueModel_rem;
-    Glc_lb = -0.03+0.002*i
+    model = EffTissueModel_rem;
+    Glc_lb = -0.3+0.02*i
     model = changeRxnBounds(model,{'EX_glc_D[e]'},Glc_lb,'l');
     solution = optimizeCbModel(model,'max').f
 end
 
-[modeleff_part,matchRevEff,rev2irrev,irrev2rev] = convertToIrreversible(modeleff,'sRxns',EffIrrRxns)
-expCol_eff = mapGeneToRxn(modeleff_part,modeleff_part.genes,ExpressionEffIncNaive,parsedGPR_naive,corrRxn_naive)
-EffTissueModel = GIMME(modeleff_part,expCol_eff,0.5)
+% PDHm lactate test
+for i=0:10
+    model = NaiveTissueModel_rem;
+    PDHm_ub = 0.01+0.05*i
+    model = changeRxnBounds(model,{'PDHm'},PDHm_ub,'u');
+    idx = find(ismember(model.rxns,'LDH_L'));
+    solution = optimizeCbModel(model,'max').v(idx)
+end
+
+
+% arg test
+model = MemTissueModel_rem;
+solution = optimizeCbModel(model,'max').f
+model = changeRxnBounds(model,{'EX_arg_L[e]'},0,'l');
+solution = optimizeCbModel(model,'max').f
+
+% leu test
+model = NaiveTissueModel_rem;
+solution = optimizeCbModel(model,'max').f
+model = changeRxnBounds(model,{'EX_leu_L[e]'},0,'l');
+solution = optimizeCbModel(model,'max').f
+
+% ACC1 test
+model = NaiveTissueModel_rem;
+model = changeRxnBounds(model,{'ACCOAC'},0,'l');
+model = changeRxnBounds(model,{'ACCOAC'},0,'u');
+solution = optimizeCbModel(model,'max').f
+
+% Glutamine test
+for i=0:15
+    model = MemTissueModel_rem;
+    Gln_lb = -0.075+0.005*i
+    model = changeRxnBounds(model,{'EX_gln_L[e]'},Gln_lb,'l');
+    solution1 = optimizeCbModel(model,'max').f
+    model = changeRxnBounds(model,{'EX_glc_D[e]'},0,'l');
+    solution2 = optimizeCbModel(model,'max').f
+end
+
+% General Human Test v5
+[TestSolution_naive,TestSolutionName_naive] = Test4HumanFctExtv5(NaiveTissueModel_rem,'all')
+[TestSolution_eff,TestSolutionName_eff] = Test4HumanFctExtv5(EffTissueModel_rem,'all')
+[TestSolution_mem,TestSolutionName_mem] = Test4HumanFctExtv5(MemTissueModel_rem,'all')
 
 
 
