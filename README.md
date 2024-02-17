@@ -403,6 +403,12 @@ end
 
 % 
 
+% Gene essentiality
+[grRatio, grRateKO, grRateWT, hasEffect, delRxns, fluxSolution] = singleGeneDeletion(NaiveTissueModel_rem, 'FBA')
+[grRatio_eff, grRateKO_eff, grRateWT_eff, hasEffect_eff, delRxns_eff, fluxSolution_eff] = singleGeneDeletion(EffTissueModel_rem, 'MOMA')
+[grRatio, grRateKO, grRateWT, hasEffect, delRxns, fluxSolution] = singleGeneDeletion(MemTissueModel_rem, 'MOMA')
+
+[solutionDel, solutionWT, totalFluxDiff, solStatus] = MOMA(modelWT, modelDel, osenseStr, verbFlag, minNormFlag)
 
 
 
