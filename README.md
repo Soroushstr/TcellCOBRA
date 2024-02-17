@@ -412,6 +412,355 @@ end
 
 
 
+% MTA
+changeCobraSolver ('tomlab_cplex', 'MIQP');
+
+solution = optimizeCbModel(NaiveTissueModel_rem,'max')
+rxnFBS = diffexprs2rxnFBS(NaiveTissueModel_rem, diffexpEff, solution.v, 'SeparateTranscript', '.', 'logFC', 0, 'pval',0.05)
+epsilonOptimal = calculateEPSILON(points, rxnFBS, 'unique_epsilon', false, 'minimum', 1e-3)
+[TSscore,deletedGenes,Vout] = MTA(NaiveTissueModel_rem, rxnFBS, solution.v, 'FORCE_CPLEX', 0,'epsilon',epsilonOptimal)
+
+solution = optimizeCbModel(NaiveTissueModel_rem,'max')
+rxnFBS = diffexprs2rxnFBS(NaiveTissueModel_rem, diffexpMem, solution.v, 'SeparateTranscript', '.', 'logFC', 0, 'pval',0.1)
+epsilonOptimal = calculateEPSILON(points, rxnFBS, 'unique_epsilon', false, 'minimum', 1e-3)
+[TSscore_mem,deletedGenes_mem,Vout_mem] = MTA(NaiveTissueModel_rem, rxnFBS, solution.v, 'FORCE_CPLEX', 0)
+
+% FVA
+[minFlux_naive, maxFlux_naive] = fluxVariability(NaiveTissueModel_rem, 90, 'printLevel', 1);
+NaiveTissueModel_WT = NaiveTissueModel_rem
+NaiveTissueModel_WT.lb = minFlux_naive;
+NaiveTissueModel_WT.ub = maxFlux_naive;
+
+[minFlux_eff, maxFlux_eff] = fluxVariability(EffTissueModel_rem, 90, 'printLevel', 1);
+EffTissueModel_WT = EffTissueModel_rem
+EffTissueModel_WT.lb = minFlux_eff
+EffTissueModel_WT.ub = maxFlux_eff
+
+[minFlux_mem, maxFlux_mem] = fluxVariability(MemTissueModel_rem, 90, 'printLevel', 1);
+MemTissueModel_WT = MemTissueModel_rem
+MemTissueModel_WT.lb = minFlux_mem
+MemTissueModel_WT.ub = maxFlux_mem  
+
+
+
+% ACHR Sampling of flux space
+warmupPts_WT = createHRWarmup(NaiveTissueModel_WT, 10000);
+ACHRSampler(NaiveTissueModel_WT, warmupPts_WT, 'Naive_samples_WT', 1, 10000, 2)
+
+warmupPts_Eff = createHRWarmup(EffTissueModel_WT, 10000);
+ACHRSampler(EffTissueModel_WT, warmupPts_Eff, 'Eff_samples_WT', 1, 10000, 2)
+
+warmupPts_Mem = createHRWarmup(MemTissueModel_WT, 10000);
+ACHRSampler(MemTissueModel_WT, warmupPts_Mem, 'Mem_samples_WT', 1, 10000, 2)
+
+% Mutant 1 promotes differentiation to effector
+Eff_Dels = {'9380.1','5238.1','51703.1','5243.1','27010.1','5833.1','7390.1','6652.1','2806.1','79896.1'}
+[NaiveTissueModel_EffMut, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, Eff_Dels)
+
+warmupPts_EffMut = createHRWarmup(NaiveTissueModel_EffMut, 10000);
+ACHRSampler(NaiveTissueModel_EffMut, warmupPts_EffMut, 'Naive_samples_EffMut', 1, 10000, 2)
+
+Mem_Dels = {'9563.1','7357.1','549.1','114971.1','51703.1','6526.1','79178.1','3988.1','2937.1','10327.1'}
+[NaiveTissueModel_MemMut, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, Mem_Dels)
+ACHRSampler(NaiveTissueModel_MemMut, warmupPts_Mem, 'Naive_samples_MemMut', 1, 10000, 2)
+
+compareSampleTraj({'LDH_L'}, {samples_wt, samples_effmut1}, {NaiveTissueModel_WT,NaiveTissueModel_EffMut1},400)
+[stats, pVals] = compareTwoSamplesStat(samples_wt, samples_effmut1, {'ks','rankSum','tTest'});
+
+histogram(samples_wt(find(ismember(NaiveTissueModel_WT.rxns,"PPAm")),:))
+hold on
+histogram(samples_effmut1(find(ismember(NaiveTissueModel_EffMut1.rxns,"PPAm")),:))
+histogram(samples_eff(find(ismember(EffTissueModel_rem.rxns,"PPAm")),:))
+hold off
+
+% Mutant 2 promotes differentiation to memory
+[NaiveTissueModel_MemMut1, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'9563.1'})
+[NaiveTissueModel_MemMut2, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'7357.1'})
+[NaiveTissueModel_MemMut3, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'549.1'})
+[NaiveTissueModel_MemMut4, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'114971.1'})
+[NaiveTissueModel_MemMut5, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'51703.1'})
+[NaiveTissueModel_MemMut6, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'8879.1'})
+[NaiveTissueModel_MemMut7, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'3073.1'})
+[NaiveTissueModel_MemMut8, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'4351.1'})
+[NaiveTissueModel_MemMut9, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'4329.1'})
+
+warmupPts_MemMut_1 = createHRWarmup(NaiveTissueModel_MemMut1, 10000);
+ACHRSampler(NaiveTissueModel_MemMut1, warmupPts_MemMut_1, 'Naive_samples_MemMut1', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut2, warmupPts_MemMut_1, 'Naive_samples_MemMut2', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut3, warmupPts_MemMut_1, 'Naive_samples_MemMut3', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut4, warmupPts_MemMut_1, 'Naive_samples_MemMut4', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut5, warmupPts_MemMut_1, 'Naive_samples_MemMut5', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut6, warmupPts_MemMut_1, 'Naive_samples_MemMut6', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut7, warmupPts_MemMut_1, 'Naive_samples_MemMut7', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut8, warmupPts_MemMut_1, 'Naive_samples_MemMut8', 1, 10000, 2)
+ACHRSampler(NaiveTissueModel_MemMut9, warmupPts_MemMut_1, 'Naive_samples_MemMut9', 1, 10000, 2)
+
+[NaiveTissueModel_EffMut1, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'9380.1'})
+ACHRSampler(NaiveTissueModel_EffMut1, warmupPts_EffMut_1, 'Naive_samples_EffMut1', 1, 10000, 2)
+
+[NaiveTissueModel_EffMut2, hasEffect, constrRxnNames, deletedGenes] = deleteModelGenes(NaiveTissueModel_WT, {'5238.1'})
+ACHRSampler(NaiveTissueModel_EffMut2, warmupPts_EffMut_1, 'Naive_samples_EffMut2', 1, 10000, 2)
+
+
+
+
+% Comparison of OXPHOS and Glycolysis
+samples_wt = loadSamples('Naive_samples_WT', 1, 10000);
+samples_wt2 = loadSamples('Naive_samples_WT2', 1, 10000);
+samples_effmut1 = loadSamples('Naive_samples_EffMut1', 1, 10000);
+samples_effmut2 = loadSamples('Naive_samples_EffMut2', 1, 10000);
+samples_effmut = loadSamples('Naive_samples_EffMut', 1, 10000);
+
+samples_memmut1 = loadSamples('Naive_samples_MemMut1', 1, 10000);
+samples_eff = loadSamples('Eff_samples_WT', 1, 10000);
+samples_mem = loadSamples('Mem_samples_WT', 1, 10000);
+
+samples_memmut3 = loadSamples('Naive_samples_MemMut3', 1, 10000);
+samples_memmut4 = loadSamples('Naive_samples_MemMut4', 1, 10000);
+samples_memmut5 = loadSamples('Naive_samples_MemMut5', 1, 10000);
+samples_memmut6 = loadSamples('Naive_samples_MemMut6', 1, 10000);
+samples_memmut7 = loadSamples('Naive_samples_MemMut7', 1, 10000);
+samples_memmut8 = loadSamples('Naive_samples_MemMut8', 1, 10000);
+samples_memmut9 = loadSamples('Naive_samples_MemMut9', 1, 10000);
+
+% OXPHOS
+energySubSystems = {'Oxidative phosphorylation'};
+energyReactions = NaiveTissueModel_WT.rxns(ismember(NaiveTissueModel_WT.subSystems(1:5511),energySubSystems));
+[~,energy_rxnID] = ismember(energyReactions,NaiveTissueModel_WT.rxns(1:5511));
+reactionNames = NaiveTissueModel_WT.rxnNames(energy_rxnID);
+reactionFormulas = printRxnFormula(NaiveTissueModel_WT,energyReactions,0);
+T = table(reactionNames,reactionFormulas,'RowNames',energyReactions)
+
+energySubSystems = {'Oxidative phosphorylation'};
+energyReactions = EffTissueModel_rem.rxns(ismember(EffTissueModel_rem.subSystems(1:5511),energySubSystems));
+[~,energy_rxnID] = ismember(energyReactions,EffTissueModel_rem.rxns(1:5511));
+reactionNames = EffTissueModel_rem.rxnNames(energy_rxnID);
+reactionFormulas = printRxnFormula(EffTissueModel_rem,energyReactions,0);
+T = table(reactionNames,reactionFormulas,'RowNames',energyReactions)
+
+compareSampleTraj(energyReactions, {samples_wt, samples_eff, samples_mem}, {NaiveTissueModel_WT,EffTissueModel_WT,MemTissueModel_WT},400)
+
+energySubSystems = {'Glycolysis/gluconeogenesis'};
+energyReactions = MemTissueModel_WT.rxns(ismember(MemTissueModel_WT.subSystems(1:5511),energySubSystems));
+[~,energy_rxnID] = ismember(energyReactions,MemTissueModel_WT.rxns(1:5511));
+reactionNames = MemTissueModel_WT.rxnNames(energy_rxnID);
+reactionFormulas = printRxnFormula(MemTissueModel_WT,energyReactions,0);
+T = table(reactionNames,reactionFormulas,'RowNames',energyReactions)
+
+compareSampleTraj({'r0354','FBA','PGI','PYK','HMR_7748','HMR_7749'}, {samples_wt, samples_eff, samples_mem}, {NaiveTissueModel_WT,EffTissueModel_WT,MemTissueModel_WT},400)
+
+compareSampleTraj({'r0354','FBA','PGI','PYK','HMR_7748','HMR_7749'}, {samples_wt, samples_mem, samples_eff}, {NaiveTissueModel_WT,MemTissueModel_rem,EffTissueModel_rem},400)
+
+histogram(samples_wt(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),:), linspace(0.12,0.28,100), 'FaceColor','#7F7FFF')
+hold on
+histogram(samples_memmut3(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),:), linspace(0.12,0.28,100),'FaceColor','#FF7F7F')
+histogram(samples_effmut(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),:), linspace(0.12,0.28,100),'FaceColor','#7FFFFF')
+histogram(samples_mem(find(ismember(MemTissueModel_WT.rxns,"CYOOm2i")),:), linspace(0.12,0.28,100),'FaceColor','#FFFF7F')
+histogram(samples_eff(find(ismember(EffTissueModel_WT.rxns,"CYOOm2i")),:), linspace(0.12,0.28,100),'FaceColor','#7FFF7F')
+xlabel('Flux through OXPHOS (mmol/gDW/hr)')
+ylabel('Count')
+title('Histogram of OXPHOS fluxes in samples')
+legend('Naive','Mutant memory','Mutant effector','Memory','Effector')
+hold off
+
+rnd_idx = randi([1 10000],1,1000);
+sampleStats_wt = calcSampleStats(samples_wt(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),rnd_idx))
+sampleStats_mem = calcSampleStats(samples_mem(find(ismember(MemTissueModel_WT.rxns,"CYOOm2i")),rnd_idx))
+sampleStats_eff = calcSampleStats(samples_eff(find(ismember(EffTissueModel_WT.rxns,"CYOOm2i")),rnd_idx))
+sampleStats_effmut = calcSampleStats(samples_effmut(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),rnd_idx))
+sampleStats_memmut1 = calcSampleStats(samples_memmut1(find(ismember(NaiveTissueModel_WT.rxns,"CYOOm2i")),rnd_idx))
+
+sampleStats_mem = calcSampleStats(samples_mem(find(ismember(MemTissueModel_WT.rxns,"FADH2ETC")),rnd_idx))
+
+rnd_idx = randi([1 10000],1,1000);
+[stats, pVals] = compareTwoSamplesStat(samples_memmut1(:,rnd_idx),samples_mem(:,rnd_idx),{'rankSum'})
+pVals.ttest(find(ismember(NaiveTissueModel_WT.rxns,"FADH2ETC")))
+[sampleDiff_mem, sampleRatio] = calcSampleDifference(samples_wt, samples_mem, 1000);
+[sampleDiff_mut1, sampleRatio] = calcSampleDifference(samples_wt, samples_memmut1, 1000);
+
+histogram(sampleDiff(find(ismember(EffTissueModel_rem.rxns,"PYK")),:))
+ttest2()
+
+rxnNames = {'PGI','PFK','FBP','FBA','TPI','GAPD','PGK','PGM','ENO','PYK','PPS'};
+sampleScatterMatrix(rxnNames,modelSampling,samples);
+
+substrateRxns = {'EX_glc_D[e]','EX_ca2[e]','EX_k[e]','EX_na1[e]','EX_ala_L[e]','EX_arg_L[e]','EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_gln_L[e]','EX_glu_L[e]','EX_his_L[e]','EX_ile_L[e]',....
+                 'EX_leu_L[e]','EX_lys_L[e]','EX_met_L[e]','EX_phe_L[e]','EX_pro_L[e]','EX_ser_L[e]','EX_thr_L[e]','EX_trp_L[e]','EX_tyr_L[e]','EX_val_L[e]','EX_btn[e]',....
+                 'EX_fol[e]','EX_inost[e]','EX_bz[e]','EX_pnto_R[e]','EX_pydxn[e]','EX_ribflv[e]','EX_but[e]','EX_2hb[e]','EX_2m3hbu[e]','EX_3bcrn[e]','EX_4ohbut[e]','EX_c4crn[e]'}
+initConcentrations = [2.7,0.1,0.4,8.8,0.43,0.2,0.05,0.02,0.0652,0.3,0.02,0.015,0.05,0.05,0.04,0.015,0.015,0.02,0.030,0.02,0.005,0.028,0.02,0.002,0.001,0.035,0.001,0.00025,0.001,0.0002,0,0,0,0,0,0]
+[concentrationMatrix, excRxnNames, timeVec, biomassVec] = dynamicFBA(NaiveTissueModel_WT, substrateRxns, initConcentrations, 0.005, 12, 8, {'EX_glc_D[e]','EX_gln_L[e]','EX_3bcrn[e]','EX_4ohbut[e]','EX_c4crn[e]'}, {'EX_co2[e]', 'EX_o2[e]', 'EX_h2o[e]', 'EX_h[e]'})
+
+NaiveModel_iMAT = iMAT(modelnaive_part, expCol_naive, 0.5, 0.5)
+solution = optimizeCbModel(NaiveModel_iMAT)
+
+
+
+modelnaive = changeRxnBounds(modelnaive,naiveExRxns,-1000,'l')
+modelnaive = changeRxnBounds(modelnaive,{'EX_glc_D[e]'},-100,'l')
+modelnaive = changeRxnBounds(modelnaive,naiveUpTake,-1,'l')
+
+% media conditions
+
+exRxns = printUptakeBound(modelnewfinal)
+modeltest = changeRxnBounds(modelnewfinal,modelnewfinal.rxns(exRxns),0,'l')
+naiveExRxns = {'EX_ca2[e]','EX_cl[e]','EX_co[e]','EX_fe2[e]','EX_h[e]','EX_h2o[e]','EX_k[e]','EX_na1[e]','EX_nh4[e]',...
+               'EX_no2[e]','EX_o2[e]','EX_pi[e]','EX_so4[e]'}
+naiveUpTake = {'EX_ala_L[e]','EX_arg_L[e]',...
+               'EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_eicostet[e]','EX_gln_L[e]','EX_glu_L[e]','EX_gly[e]',...
+               'EX_hdca[e]','EX_hdcea[e]','EX_his_L[e]','EX_ile_L[e]','EX_leu_L[e]','EX_lnlc[e]','EX_lnlnca[e]',...
+               'EX_lnlncg[e]','EX_lys_L[e]','EX_met_L[e]','EX_ocdca[e]','EX_ocdcea[e]','EX_orn_D[e]',...
+               'EX_phe_L[e]','EX_pro_L[e]','EX_ribflv[e]','EX_ser_L[e]','EX_thr_L[e]','EX_trp_L[e]','EX_tyr_L[e]',...
+               'EX_val_L[e]','EX_vitd3[e]','EX_tag_hs[e]'}
+modelnaive = changeRxnBounds(modeltest,naiveExRxns,-1000,'l')
+modelnaive = changeRxnBounds(modelnaive,{'EX_glc_D[e]'},-100,'l')
+modelnaive = changeRxnBounds(modelnaive,naiveUpTake,-1,'l')
+
+
+EffExRxns = {'EX_ca2[e]','EX_cl[e]','EX_co2[e]','EX_fe2[e]','EX_h[e]','EX_h2o[e]','EX_k[e]','EX_na1[e]',...
+             'EX_nh4[e]','EX_no2[e]','EX_pi[e]','EX_so4[e]'}
+EffUptakeRxns = {'EX_ala_L[e]','EX_arg_L[e]','EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_gln_L[e]','EX_glu_L[e]','EX_gly[e]',...
+                 'EX_his_L[e]','EX_ile_L[e]','EX_leu_L[e]','EX_lys_L[e]','EX_met_L[e]','EX_orn[e]','EX_orn_D[e]',...
+                 'EX_phe_L[e]','EX_pro_L[e]','EX_ribflv[e]','EX_ser_L[e]','EX_thr_L[e]','EX_trp_L[e]','EX_tyr_L[e]',...
+                 'EX_val_L[e]','EX_vitd3[e]','EX_tag_hs[e]'}
+modeleff = changeRxnBounds(modeltest,EffExRxns,-1000,'l')
+modeleff = changeRxnBounds(modeleff,{'EX_glc_D[e]'},-100,'l')
+modeleff = changeRxnBounds(modeleff,{'EX_o2[e]'},-20,'l')
+modeleff = changeRxnBounds(modeleff,EffUptakeRxns,-1,'l')
+
+MemExRxns =   {'EX_ca2[e]','EX_cl[e]','EX_co[e]','EX_co2[e]','EX_fe2[e]','EX_h[e]','EX_h2o[e]','EX_k[e]','EX_na1[e]','EX_nh4[e]',...
+               'EX_no2[e]','EX_o2[e]','EX_pi[e]','EX_so4[e]'}
+MemUptakeRxns = {'EX_ala_L[e]','EX_arg_L[e]','EX_asn_L[e]','EX_asp_L[e]','EX_cys_L[e]','EX_eicostet[e]','EX_gln_L[e]','EX_glu_L[e]','EX_gly[e]',...
+                 'EX_hdca[e]','EX_hdcea[e]','EX_his_L[e]','EX_ile_L[e]','EX_leu_L[e]','EX_lnlc[e]','EX_lnlnca[e]',...
+                 'EX_lnlncg[e]','EX_lys_L[e]','EX_met_L[e]','EX_ocdca[e]','EX_ocdcea[e]','EX_orn_D[e]',...
+                 'EX_phe_L[e]','EX_pro_L[e]','EX_ribflv[e]','EX_ser_L[e]','EX_thr_L[e]','EX_trp_L[e]','EX_tyr_L[e]',...
+                 'EX_val_L[e]','EX_vitd3[e]','EX_1glyc_hs[e]','EX_ak2lgchol_hs[e]','EX_mag_hs[e]','EX_paf_hs[e]',...
+                 'EX_pglyc_hs[e]','EX_tag_hs[e]','EX_HC01444[e]','EX_12dgr120[e]','EX_magarachi_hs[e]',...
+                 'EX_maglinl_hs[e]','EX_magole_hs[e]','EX_magpalm_hs[e]','EX_magste_hs[e]','EX_glyc2p[e]','EX_glyc[e]'}
+modelmem = changeRxnBounds(modeltest,MemExRxns,-1000,'l')
+modelmem = changeRxnBounds(modelmem,{'EX_glc_D[e]'},-100,'l')
+modelmem = changeRxnBounds(modelmem,{'EX_o2[e]'},-20,'l')
+modelmem = changeRxnBounds(modelmem,MemUptakeRxns,-1,'l')
+
+% Directionality changes 
+naiveIrrRxns = {'TTDCPT2','TMNDNCCRNt','TMNDNCCPT2','TMNDNCCPT1','TETTET6CRNt',...
+                'TETTET6CPT2','TETTET6CPT1','TETPENT6CRNt','TETPENT6CPT2','TETPENT6CPT1',...
+                'TETPENT3CRNt','TETPENT3CPT2','TETPENT3CPT1','STRDNCCRNt','STRDNCCPT2',...
+                'STRDNCCPT1','RE0583C','r1401','r1400','r0791','r0735','r0652','r0638','r0636','r0633','r0432',...
+                'r0431','r0309','PTDCACRNt','PTDCACRNCPT2','PTDCACRNCPT1','PCRNtm','LNLNCGCRNt',...
+                'LNLNCGCPT2','LNLNCGCPT1','LNLNCACRNt','LNLNCACPT2','LNLNCACPT1','LNLCCRNt',...
+                'LNLCCPT2','LNLCCPT1','LNELDCCRNt','LNELDCCPT2','LNELDCCPT1','HXCOAx','HXCOAc',...
+                'HPDCACRNt','HPDCACRNCPT2','HPDCACRNCPT1','HEXDIACtr','ELAIDCRNt','ELAIDCPT2',...
+                'ELAIDCPT1','EICOSTETCRNt','EICOSTETCPT2','EICOSTETCPT1','DLNLCGCRNt',...
+                'DLNLCGCPT2','DLNLCGCPT1','DCSPTN1CRNt','DCSPTN1CPT2','DCSPTN1CPT1',...
+                'CLPNDCRNt','CLPNDCPT2','CLPNDCPT1','C30CPT1','C226CRNt','C226CPT2','C226CPT1',...
+                'C204CRNt','C204CPT2','C204CPT1','C181CRNt','C181CPT2','C181CPT1','C180CPT2',...
+                'C180CPT1','C161CRNt','C161CRN2t','C161CPT22','C161CPT2','C161CPT12','C161CPT1',...
+                'C160CPT2','C160CPT1','ARACHCPT2','ARACHCPT1','ADRNCRNt','ADRNCPT2','ADRNCPT1'}
+[modelnaive_part,matchRevNaive,rev2irrev,irrev2rev] = convertToIrreversible(modelnaive,'sRxns',naiveIrrRxns)
+
+EffIrrRxns = {'ADRNCPT2','ADRNCRNt','C160CPT2','C161CPT2','C161CPT22','C161CRN2t','C161CRNt',...
+              'C180CPT2','C181CPT2','C181CRNt','C204CPT2','C204CRNt','C226CPT2','C226CRNt',...
+              'CLPNDCPT2','CLPNDCRNt','DCSPTN1CPT2','DCSPTN1CRNt','DLNLCGCPT2',...
+              'DLNLCGCRNt','EICOSTETCPT2','EICOSTETCRNt','ELAIDCPT2','ELAIDCRNt',...
+              'HPDCACRNCPT2','HPDCACRNt','HXCOAc','HXCOAx','LNELDCCPT2','LNELDCCRNt',...
+              'LNLCCPT2','LNLCCRNt','LNLNCGCPT2','LNLNCGCRNt','PCRNtm','PTDCACRNCPT2',...
+              'PTDCACRNt','r0309','r0633','r0636','r0638','r0652','r0735','r1400','r1401','RE0583C',...
+              'STRDNCCPT2','STRDNCCRNt','TMNDNCCPT2','TMNDNCCRNt','TTDCPT2'}
+[modeleff_part,matchRevEff,rev2irrev,irrev2rev] = convertToIrreversible(modeleff,'sRxns',EffIrrRxns)
+
+[modelmem_part,matchRevMem,rev2irrev,irrev2rev] = convertToIrreversible(modelmem,'sRxns',EffIrrRxns)
+
+% Update GPR
+[parsedGPR_naive_irr,corrRxn_naive_irr] = extractGPRs(modelnaive_irrev)
+[parsedGPR_naive,corrRxn_naive] = extractGPRs(modelnaive)
+
+% Read rules files
+
+
+% Gene expression to reaction expression, regarding GPR
+expCol_naive = mapGeneToRxn(modelnaive_part,modelnaive_part.genes,Expression,parsedGPR_naive,corrRxn_naive)
+expCol_eff = mapGeneToRxn(modeleff_part,modeleff_part.genes,Expression,parsedGPR_naive,corrRxn_naive)
+expCol_mem = mapGeneToRxn(modelmem_part,modelmem_part.genes,ExpressionMem,parsedGPR_naive,corrRxn_naive)
+
+expCol_eff1 = mapGeneToRxn(modeleff_part,modeleff_part.genes,ExpressionEff,parsedGPR_naive,corrRxn_naive)
+expCol_eff2 = mapGeneToRxn(modeleff_part,modeleff_part.genes,ExpressionEffIncNaive,parsedGPR_naive,corrRxn_naive)
+expCol_eff3 = mapGeneToRxn(modeleff_part,modeleff_part.genes,ExpressionEffPuniya,parsedGPR_naive,corrRxn_naive)
+expCol_eff4 = mapGeneToRxn(modeleff_part,modeleff_part.genes,ExpressionEffIncEff,parsedGPR_naive,corrRxn_naive)
+
+expCol_Puniya = mapGeneToRxn(modelnaive,modelnaive.genes,ExpPuniya,parsedGPR_naive,corrRxn_naive)
+
+% GIMME
+NaiveTissueModel = GIMME(modelnaive_part,expCol_naive,0.5)
+EffTissueModel = GIMME(modeleff_part,expCol_eff,0.5)
+MemTissueModel = GIMME(modelmem_part,expCol_mem,0.5)
+
+EffTissueModel1 = GIMME(modeleff_part,expCol_eff1,0.5)
+EffTissueModel2 = GIMME(modeleff_part,expCol_eff2,0.5)
+EffTissueModel3 = GIMME(modeleff_part,expCol_eff3,0.5)
+EffTissueModel4 = GIMME(modeleff_part,expCol_eff4,0.5)
+
+NaiveTissuePuniya = GIMME(modelnaive,expCol_Puniya,0.5)
+
+% Remove dead end reactions
+[NaiveTissueModel_rem,removedMetsNaiveIrr,removedRxnsNaiveIrr] = removeDeadEnds(NaiveTissueModel)
+[EffTissueModel_rem,removedMetsEffIrr,removedRxnsEffIrr] = removeDeadEnds(EffTissueModel)
+[MemTissueModel_rem,removedMetsMemIrr,removedRxnsMemIrr] = removeDeadEnds(MemTissueModel)
+
+outmodel = writeCbModel(NaiveTissueModel_rem,'format','mat')
+outmodel = writeCbModel(EffTissueModel,'format','sbml')
+outmodel = writeCbModel(MemTissueModel,'format','sbml')
+
+NaiveTissueModel = readCbModel('C:\Users\MSI\cobratoolbox\NaiveFinal.mat')
+EffTissueModel = readCbModel('C:\Users\MSI\cobratoolbox\EffFinal.mat')
+
+NaiveTissueModel = changeRxnBounds(NaiveTissueModel,{'EX_glc_D[e]'},-100,'l')
+NaiveTissueModel = changeRxnBounds(NaiveTissueModel,naiveUpTake,-1,'l')
+
+[TestSolution_eff1,TestSolutionName_eff1] = Test4HumanFctExtv5(EffTissueModel1,'all')
+[TestSolution_eff2,TestSolutionName_eff2] = Test4HumanFctExtv5(EffTissueModel2,'all')
+[TestSolution_eff3,TestSolutionName_eff3] = Test4HumanFctExtv5(EffTissueModel3,'all')
+[TestSolution_eff4,TestSolutionName_eff4] = Test4HumanFctExtv5(EffTissueModel4,'all')
+
+% Leak test
+
+modelClosed = NaiveTissueModel_rem;
+modelClosed = addDemandReaction(modelClosed,modelClosed.mets);
+
+modelexchanges1 = strmatch('Ex_',modelClosed.rxns);
+modelexchanges4 = strmatch('EX_',modelClosed.rxns);
+modelexchanges2 = strmatch('DM_',modelClosed.rxns);
+modelexchanges3 = strmatch('sink_',modelClosed.rxns);
+selExc = (find( full((sum(abs(modelClosed.S)==1,1) ==1) & (sum(modelClosed.S~=0) == 1))))';
+
+modelexchanges = unique([modelexchanges1;modelexchanges2;modelexchanges3;modelexchanges4;selExc]);
+modelClosed.lb(ismember(modelClosed.rxns,modelClosed.rxns(modelexchanges)))=0;
+
+[LeakMets,modelClosed] = fastLeakTest(modelClosed, modelClosed.rxns(modelexchanges),0);
+
+% ATP Production aerobic
+model = NaiveTissueModel_rem;
+model.c(find(model.c)) = 0;
+model.lb(ismember(model.rxns,'EX_glc_D[e]'))=-1;model.ub(ismember(model.rxns,'EX_glc_D[e]'))=-1;
+model.lb(ismember(model.rxns,'EX_o2[e]'))=-40;model.ub(ismember(model.rxns,'EX_o2[e]'))=-1;
+model.c(ismember(model.rxns,'DM_atp_c_'))=1;
+FBA = optimizeCbModel(model,'max')
+
+% Glucose-dependence test
+for i=0:15
+    model = NaiveTissueModel_rem;
+    Glc_lb = -0.3+0.02*i
+    model = changeRxnBounds(model,{'EX_glc_D[e]'},Glc_lb,'l');
+    %model = changeRxnBounds(model,{'EX_gln_L[e]'},Glc_lb,'l');
+    solution = optimizeCbModel(model,'max').f
+end
+
+% PDHm flux effect on Lactate Production test
+
+% 
+
+
+
+
 
 % pre-FBA check
 preFBAcheck = checkModelPreFBA(NaiveTissueModel)
@@ -453,10 +802,8 @@ modelFileName = 'Recon2.0model.mat';
 modelDirectory = getDistributedModelFolder(modelFileName); %Look up the folder for the distributed Models.
 modelFileName= [modelDirectory filesep modelFileName]; % Get the full path. Necessary to be sure, that the right model is loaded
 model_h = readCbModel(modelFileName);
-```
+
  
-
-
 
 
 
